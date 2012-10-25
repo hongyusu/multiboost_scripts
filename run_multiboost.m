@@ -139,7 +139,6 @@ for k=1:nfold
     % testing
     system(sprintf('%s --stronglearner AdaBoostMH --baselearnertype SingleStumpLearner 50 --fileformat arff --posteriors test.arff shyp.xml res 100',multiboost));
     pred=dlmread('res');
-    (numel(pred)-sum(sum((pred>=0)*2-1==Y_ts)))/numel(Y_ts)
     YpredVal = [YpredVal;[pred,Itest]];
 end
 YpredVal = sortrows(YpredVal,size(YpredVal,2));

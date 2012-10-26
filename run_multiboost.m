@@ -1,9 +1,9 @@
 
-function rtn = run_MTL()
+function rtn = run_multiboost()
 
 % add path of libsvm
 addpath '~/softwares/libsvm-3.12/matlab/'
-
+addpath '../shared_scripts/'
 
 % actual running
 %for name={'emotions','yeast','scene','enron','cal500','fp','cancer','medical','toy10','toy50'}
@@ -11,12 +11,17 @@ addpath '~/softwares/libsvm-3.12/matlab/'
 %Y=dlmread(sprintf('/fs/group/urenzyme/workspace/data/%s_targets',name{1}));
 
 % simulate testing
-for name={'emotions'}
-X=dlmread(sprintf('./test_data/%s_features',name{1}));
-Y=dlmread(sprintf('./test_data/%s_targets',name{1}));
+for name={'toy10'}
+X=dlmread(sprintf('../shared_scripts/test_data/%s_features',name{1}));
+Y=dlmread(sprintf('../shared_scripts/test_data/%s_targets',name{1}));
 
 rand('twister', 0);
 
+%------------
+%
+% preparing     
+%
+%------------
 % example selection with meaningful features
 Xsum=sum(X,2);
 X=X(find(Xsum~=0),:);
@@ -78,7 +83,7 @@ for i=1:Ny
         if strcmp(name{1}(1:2),'to')
                 svm_c=0.01;
         elseif strcmp(name{1},'cancer')
-                svm_c=5
+                svm_c=5;
         else
                 svm_c=0.5;
         end
@@ -98,15 +103,13 @@ for i=1:Ny
     YpredVal = [YpredVal,YcolVal(:,1)];
 end
 % performance of svm
-[ax,ay,t,auc]=perfcurve(reshape(Y,1,numel(Y)),reshape(YpredVal,1,numel(Y)),1);
-auc1=get_auc(Y,YpredVal);
-[acc,vecacc,pre,rec,f1]=get_performance(Y,Ypred);
-perf=[perf;[acc,vecacc,pre,rec,f1,auc,auc1]];perf
+[acc,vecacc,pre,rec,f1,auc1,auc2]=get_performance(Y,Ypred,YpredVal);
+perf=[perf;[acc,vecacc,pre,rec,f1,auc1,auc2]];perf
 
 
 %------------
 %
-% MTL
+% multiboost
 %
 %------------
 multiboost='~/softwares/MultiBoost/multiboost';
@@ -145,14 +148,11 @@ YpredVal = sortrows(YpredVal,size(YpredVal,2));
 YpredVal = YpredVal(:,1:size(Y,2));
 
 % auc & roc mtl
-[ax,ay,t,auc]=perfcurve(reshape(Y,1,numel(Y)),reshape(YpredVal,1,numel(Y)),1);
-auc1=get_auc(Y,YpredVal);
-[acc,vecacc,pre,rec,f1]=get_performance(Y,(YpredVal>0));
-perf=[perf;[acc,vecacc,pre,rec,f1,auc,auc1]];perf
+[acc,vecacc,pre,rec,f1,auc1,auc2]=get_performance(Y,(YpredVal>0),YpredVal);
+perf=[perf;[acc,vecacc,pre,rec,f1,auc1,auc2]];perf
+% save results
 dlmwrite(sprintf('../predictions/%s_predValAda',name{1}),YpredVal)
 dlmwrite(sprintf('../predictions/%s_predBinAda',name{1}),YpredVal>=0)
-
-% save results
 dlmwrite(sprintf('../results/%s_perfAda',name{1}),perf)
 end
 
@@ -160,14 +160,5 @@ rtn = [];
 end
 
 
-
-
-function [auc] = get_auc(Y,YpredVal)
-    AUC=zeros(1,size(Y,2));
-    for i=1:size(Y,2)
-        [ax,ay,t,AUC(1,i)]=perfcurve(Y(:,i),YpredVal(:,i),1);
-    end
-    auc=mean(AUC);
-end
 
 
